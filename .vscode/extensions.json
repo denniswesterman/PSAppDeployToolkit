@@ -1,6 +1,6 @@
-// PSAppDeployToolkit default extension recommendations
 {
     "recommendations": [
-        "ms-vscode.PowerShell"
+        "ms-vscode.powershell",
+        "Gruntfuggly.todo-tree"
     ]
 }
