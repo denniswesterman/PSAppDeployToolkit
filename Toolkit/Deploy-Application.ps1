@@ -135,8 +135,7 @@ Try {
     ## Variables: Environment
     If (Test-Path -LiteralPath 'variable:HostInvocation') {
         $InvocationInfo = $HostInvocation
-    }
-    Else {
+    } Else {
         $InvocationInfo = $MyInvocation
     }
     [String]$scriptDirectory = Split-Path -Path $InvocationInfo.MyCommand.Definition -Parent
@@ -149,12 +148,10 @@ Try {
         }
         If ($DisableLogging) {
             . $moduleAppDeployToolkitMain -DisableLogging
-        }
-        Else {
+        } Else {
             . $moduleAppDeployToolkitMain
         }
-    }
-    Catch {
+    } Catch {
         If ($mainExitCode -eq 0) {
             [Int32]$mainExitCode = 60008
         }
@@ -162,8 +159,7 @@ Try {
         ## Exit the script, returning the exit code to SCCM
         If (Test-Path -LiteralPath 'variable:HostInvocation') {
             $script:ExitCode = $mainExitCode; Exit
-        }
-        Else {
+        } Else {
             Exit $mainExitCode
         }
     }
@@ -181,13 +177,69 @@ Try {
         [String]$installPhase = 'Pre-Installation'
 
         ## Show Welcome Message, close Internet Explorer if required, allow up to 3 deferrals, verify there is enough disk space to complete the install, and persist the prompt
-        Show-InstallationWelcome -CloseApps 'iexplore' -AllowDefer -DeferTimes 3 -CheckDiskSpace -PersistPrompt
+        #Show-InstallationWelcome -CloseApps 'iexplore' -AllowDefer -DeferTimes 3 -CheckDiskSpace -PersistPrompt
+        $targetOfficeExecutables = @(
+            'lync',
+            'winword',
+            'excel',
+            'msaccess', 
+            'mstore',
+            'infopath', 
+            'setlang',
+            'msouc',
+            'ois',
+            'onenote', 
+            'outlook',
+            'powerpnt', 
+            'mspub',
+            'groove', 
+            'visio',
+            'winproj', 
+            'graph',
+            'onedrive', 
+            'teams',
+            'ms-teams', 
+            'olk' 
+        )
 
+        $foundOfficeExecutables = $false
+
+        foreach ($exe in $targetOfficeExecutables) {
+            $targetProcesses = @(Get-WmiObject -Query "Select * FROM Win32_Process WHERE Name='$exe'" -ErrorAction SilentlyContinue)
+            if ($targetProcesses.Count -ne 0) {
+                $foundOfficeExecutables = $true
+                break
+            }
+        }
+
+        if (-not $foundOfficeExecutables) {
+            #No relevant Office processes found
+    
+        } else {
+    
+            #Office processes found
+            Show-InstallationWelcome -CloseApps 'winword=Microsoft Office Word,excel=Microsoft Office Excel,POWERPNT=Microsoft Office PowerPoint,Outlook=Microsoft Office Outlook,ONENOTEM=Microsoft Office OneNote,MSACCESS=Microsoft Office Access,MSPUB=Microsoft Office Publisher,Visio=Microsoft Office Visio,WinProj=Microsoft Office Project' -BlockExecution -AllowDefer -DeferTimes 3 -CloseAppsCountdown 3600
+    
+        }
         ## Show Progress Message (with the default message)
-        Show-InstallationProgress
 
         ## <Perform Pre-Installation tasks here>
+        $processesExplorer = @(Get-CimInstance -ClassName 'Win32_Process' -Filter "Name like 'explorer.exe'" -ErrorAction 'Ignore')
+        $esp = $false
+        foreach ($processExplorer in $processesExplorer) {
+            $user = (Invoke-CimMethod -InputObject $processExplorer -MethodName GetOwner).User
+            if ($user -eq 'defaultuser0' -or $user -eq 'defaultuser1') { $esp = $true }
+        }
 
+        Write-Host $esp
+
+        If ($esp -eq $True) {
+            #In ESP - Do not Show Progress Banner
+        } else {
+            #Not in ESP - Show Progress Banner
+            Show-InstallationProgress -StatusMessage "The latest version of Microsoft Office 365 (64-bit) is being installed on your workstation. Thank you for your patience while we download and complete the setup. Once complete, this window will close."
+        }
+        
 
         ##*===============================================
         ##* INSTALLATION
@@ -205,7 +257,66 @@ Try {
         }
 
         ## <Perform Installation tasks here>
+        $officeFolderPath = Join-Path $env:TEMP "office"
 
+        if (Test-Path $officeFolderPath) {
+            Remove-Item -Path $officeFolderPath -Recurse -Force
+        }
+
+        # Download the Office 365 installer
+        $officeInstallerDownloadURL = 'https://officecdn.microsoft.com/pr/wsus/setup.exe'
+        $officeFolderPath = Join-Path $env:TEMP "office"
+        Invoke-WebRequest -Uri $officeInstallerDownloadURL -OutFile "$officeFolderPath\setup.exe"
+
+        # Download the Office 365 configuration file
+        # PowerShell Script to Retrieve Azure AD Tenant Information from Registry
+
+        # Function to retrieve a registry value
+        function Get-RegistryValue {
+            param (
+                [string]$Path,
+                [string]$Key
+            )
+    
+            # Check if the registry path exists
+            if (Test-Path $Path) {
+                # Retrieve the value from the registry
+                $value = Get-ItemProperty -Path $Path -Name $Key -ErrorAction SilentlyContinue | Select-Object -ExpandProperty $Key
+        
+                # Check if the value was found
+                if ($value) {
+                    return $value
+                } else {
+                    return "Value not found for $Key in $Path."
+                }
+            } else {
+                return "Registry path does not exist: $Path."
+            }
+        }
+
+        # Retrieve Azure AD Display Name
+        $displayNamePath = "HKLM:\SYSTEM\ControlSet001\Control\CloudDomainJoin\TenantInfo\*"
+        $displayNameKey = "DisplayName"
+        $displayName = Get-RegistryValue -Path $displayNamePath -Key $displayNameKey
+        Write-Output "Azure AD Display Name: $displayName"
+
+        # Retrieve Azure AD Tenant ID
+        $tenantIdPath = "HKLM:\SOFTWARE\Microsoft\Provisioning\Diagnostics\AutoPilot"
+        $tenantIdKey = "TenantId"
+        $tenantId = Get-RegistryValue -Path $tenantIdPath -Key $tenantIdKey
+        Write-Output "Azure AD Tenant ID: $tenantId"
+
+        $Microsoft365Appsforenterprise64bitonCurrentChannelUrl = "https://github.com/denniswesterman/M365-Apps/blob/006880da9bf236522828e191b77570b85579eb07/Microsoft%20365%20Apps%20for%20enterprise%2064-bit%20on%20Current%20Channel.xml"
+        $Microsoft365Appsforenterprise64bitonCurrentChannelPath = "Microsoft 365 Apps for enterprise 64-bit on Current Channel.xml"
+
+        # Download config
+        Invoke-WebRequest -Uri $Microsoft365Appsforenterprise64bitonCurrentChannelUrl -OutFile $officeFolderPath\$Microsoft365Appsforenterprise64bitonCurrentChannelPath -UseBasicParsing
+        ((Get-Content -path $Microsoft365Appsforenterprise64bitonCurrentChannelPath -Raw) -replace '<Company>', $displayName) | Set-Content -Path $officeFolderPath\$Microsoft365Appsforenterprise64bitonCurrentChannelPath
+        ((Get-Content -path $Microsoft365Appsforenterprise64bitonCurrentChannelPath -Raw) -replace '<tenantId>', $tenantId) | Set-Content -Path $officeFolderPath\$Microsoft365Appsforenterprise64bitonCurrentChannelPath
+
+        $Install = Execute-Process -Path "$officeFolderPath\setup.exe" -Parameters "/configure `"$officeFolderPath\Microsoft 365 Apps for enterprise 64-bit on Current Channel.xml`"" -Passthru
+        $ExitCode = $Install.exitcode
+        $ExitCode
 
         ##*===============================================
         ##* POST-INSTALLATION
@@ -218,15 +329,14 @@ Try {
         If (-not $useDefaultMsi) {
             Show-InstallationPrompt -Message 'You can customize text to appear at the end of an install or remove it completely for unattended installations.' -ButtonRightText 'OK' -Icon Information -NoWait
         }
-    }
-    ElseIf ($deploymentType -ieq 'Uninstall') {
+    } ElseIf ($deploymentType -ieq 'Uninstall') {
         ##*===============================================
         ##* PRE-UNINSTALLATION
         ##*===============================================
         [String]$installPhase = 'Pre-Uninstallation'
 
         ## Show Welcome Message, close Internet Explorer with a 60 second countdown before automatically closing
-        Show-InstallationWelcome -CloseApps 'iexplore' -CloseAppsCountdown 60
+        # Show-InstallationWelcome -CloseApps 'iexplore' -CloseAppsCountdown 60
 
         ## Show Progress Message (with the default message)
         Show-InstallationProgress
@@ -258,15 +368,14 @@ Try {
         ## <Perform Post-Uninstallation tasks here>
 
 
-    }
-    ElseIf ($deploymentType -ieq 'Repair') {
+    } ElseIf ($deploymentType -ieq 'Repair') {
         ##*===============================================
         ##* PRE-REPAIR
         ##*===============================================
         [String]$installPhase = 'Pre-Repair'
 
         ## Show Welcome Message, close Internet Explorer with a 60 second countdown before automatically closing
-        Show-InstallationWelcome -CloseApps 'iexplore' -CloseAppsCountdown 60
+        # Show-InstallationWelcome -CloseApps 'iexplore' -CloseAppsCountdown 60
 
         ## Show Progress Message (with the default message)
         Show-InstallationProgress
@@ -302,8 +411,7 @@ Try {
 
     ## Call the Exit-Script function to perform final cleanup operations
     Exit-Script -ExitCode $mainExitCode
-}
-Catch {
+} Catch {
     [Int32]$mainExitCode = 60001
     [String]$mainErrorMessage = "$(Resolve-Error)"
     Write-Log -Message $mainErrorMessage -Severity 3 -Source $deployAppScriptFriendlyName
