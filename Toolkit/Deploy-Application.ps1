@@ -279,7 +279,7 @@ Try {
             $displayName = Get-RegistryValue -Path $displayNamePath -Key $displayNameKey
             Write-Output "Azure AD Display Name: $displayName"
         } catch {
-            if ($_ -match "Registry path does not exist:") {
+            if ($_ -match "Registry path does not exist: HKLM:\SOFTWARE\Microsoft\Provisioning\Diagnostics\AutoPilot.") {
                 $displayName = "Dummy Value"
                 Write-Output "Azure AD Display Name: $displayName"
             } else {
@@ -294,7 +294,7 @@ Try {
             $tenantId = Get-RegistryValue -Path $tenantIdPath -Key $tenantIdKey
             Write-Output "Azure AD Tenant ID: $tenantId"
         } catch {
-            if ($_ -match "Registry path does not exist:") {
+            if ($_ -match "Registry path does not exist: HKLM:\SYSTEM\ControlSet001\Control\CloudDomainJoin\TenantInfo\*.") {
                 $tenantId = "Dummy Value"
                 Write-Output "Azure AD Tenant ID: $tenantId"
             } else {
