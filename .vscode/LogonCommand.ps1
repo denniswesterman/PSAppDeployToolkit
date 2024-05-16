@@ -6,6 +6,12 @@ if (-not (Test-Path -Path $globalScriptPath)) {
 }
 . $globalScriptPath
 
+# Begin the installation process
+Start-Process -FilePath "$ToolkitPath\$InstallexeName" -WindowStyle Maximized -Wait
+
+
+
+<#
 # Check if the installation executable requires winget
 if (Get-Content -Path "$ToolkitPath\$InstallexeName" | Select-String "winget install") {
     Write-Host "Requires winget"
@@ -56,6 +62,4 @@ if (Get-Content -Path "$ToolkitPath\$InstallexeName" | Select-String "winget ins
 
     Add-AppxPackage -Path $msixPath -DependencyPath $vcLibsPath, $uiLibsPath -Verbose
 }
-
-# Begin the installation process
-Start-Process -FilePath "$ToolkitPath\$InstallexeName" -WindowStyle Maximized -Wait
+#>

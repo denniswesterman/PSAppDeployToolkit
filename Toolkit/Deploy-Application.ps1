@@ -257,7 +257,7 @@ Try {
         }
 
         ## <Perform Installation tasks here>
-        $officeFolderPath = Join-Path $env:TEMP "office"
+        $officeFolderPath = Join-Path -ChildPath "office" -Path "C:\Temp"
 
         if (Test-Path $officeFolderPath) {
             Remove-Item -Path $officeFolderPath -Recurse -Force
@@ -266,10 +266,17 @@ Try {
         # Create the Office folder path
         New-Item -ItemType Directory -Path $officeFolderPath -Force
 
-        # Download the Office 365 installer
-        $officeInstallerDownloadURL = 'https://officecdn.microsoft.com/pr/wsus/setup.exe'
-        $officeFolderPath = Join-Path $env:TEMP "office"
-        Invoke-WebRequest -Uri $officeInstallerDownloadURL -OutFile "$officeFolderPath\setup.exe"
+        # Check if the Office installer file already exists
+        $officeInstallerPath = Join-Path $officeFolderPath "setup.exe"
+        if (-not (Test-Path $officeInstallerPath)) {
+            # Download the Office 365 installer
+            $officeInstallerDownloadURL = 'https://officecdn.microsoft.com/pr/wsus/setup.exe'
+            try {
+                Invoke-WebRequest -Uri $officeInstallerDownloadURL -OutFile $officeInstallerPath
+            } catch {
+                Write-Host "Failed to download the Office installer: $_"
+            }
+        }
 
         # Download the Office 365 configuration file
         # PowerShell Script to Retrieve Azure AD Tenant Information from Registry
@@ -309,14 +316,14 @@ Try {
         $tenantId = Get-RegistryValue -Path $tenantIdPath -Key $tenantIdKey
         Write-Output "Azure AD Tenant ID: $tenantId"
 
-        $Microsoft365Appsforenterprise64bitonCurrentChannelUrl = "https://github.com/denniswesterman/M365-Apps/blob/006880da9bf236522828e191b77570b85579eb07/Microsoft%20365%20Apps%20for%20enterprise%2064-bit%20on%20Current%20Channel.xml"
+        $Microsoft365Appsforenterprise64bitonCurrentChannelUrl = "https://raw.githubusercontent.com/denniswesterman/M365-Apps/006880da9bf236522828e191b77570b85579eb07/Microsoft%20365%20Apps%20for%20enterprise%2064-bit%20on%20Current%20Channel.xml"
         $Microsoft365Appsforenterprise64bitonCurrentChannelPath = "Microsoft 365 Apps for enterprise 64-bit on Current Channel.xml"
 
         # Download config
         Invoke-WebRequest -Uri $Microsoft365Appsforenterprise64bitonCurrentChannelUrl -OutFile $officeFolderPath\$Microsoft365Appsforenterprise64bitonCurrentChannelPath -UseBasicParsing
-        ((Get-Content -path $Microsoft365Appsforenterprise64bitonCurrentChannelPath -Raw) -replace '<Company>', $displayName) | Set-Content -Path $officeFolderPath\$Microsoft365Appsforenterprise64bitonCurrentChannelPath
-        ((Get-Content -path $Microsoft365Appsforenterprise64bitonCurrentChannelPath -Raw) -replace '<tenantId>', $tenantId) | Set-Content -Path $officeFolderPath\$Microsoft365Appsforenterprise64bitonCurrentChannelPath
-
+        ((Get-Content -path $officeFolderPath\$Microsoft365Appsforenterprise64bitonCurrentChannelPath -Raw) -replace '<Company>', $displayName) | Set-Content -Path $officeFolderPath\$Microsoft365Appsforenterprise64bitonCurrentChannelPath
+        ((Get-Content -path $officeFolderPath\$Microsoft365Appsforenterprise64bitonCurrentChannelPath -Raw) -replace '<tenantId>', $tenantId) | Set-Content -Path $officeFolderPath\$Microsoft365Appsforenterprise64bitonCurrentChannelPath
+        Set-location $officeFolderPath
         $Install = Execute-Process -Path "$officeFolderPath\setup.exe" -Parameters "/configure `"$officeFolderPath\Microsoft 365 Apps for enterprise 64-bit on Current Channel.xml`"" -Passthru
         $ExitCode = $Install.exitcode
         $ExitCode

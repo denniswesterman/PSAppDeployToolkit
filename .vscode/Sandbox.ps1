@@ -7,7 +7,8 @@ if (-not (Test-Path -Path $globalScriptPath)) {
 . $globalScriptPath
 
 # Copy Resources
-Copy-Item -Path ".vscode\$LogonCommand" -Destination "$Win32App\" -Recurse -Force -Verbose -ErrorAction Ignore
+# Copy-Item -Path ".vscode\$LogonCommand" -Destination "$Win32App\" -Recurse -Force -Verbose -ErrorAction Ignore
+robocopy "$ToolkitPath" "$Win32App" /E /R:3 /W:1 /NP
 
 # Prepare Sandbox Configuration
 $sandboxConfig = @"
