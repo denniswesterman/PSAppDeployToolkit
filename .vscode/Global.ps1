@@ -14,16 +14,7 @@ $AppFullName = Get-Item -Path $ToolkitPath
 $Installexe = Get-ChildItem -Path $AppFullName.FullName -Filter *.exe
 $InstallexeName = $Installexe.Name
 
-<#
-[string]$Desktop = [Environment]::GetFolderPath('DesktopDirectory')
+# Variables for sandbox paths
 [string]$WDADesktop = "C:\Users\WDAGUtilityAccount\Desktop"
-[string]$Win32App = "C:\M365\win32app"
-[string]$Application = "$($env:APPVEYOR_REPO_BRANCH)"
-[string]$Cache = "C:\M365\win32app\$Application"
 [string]$LogonCommand = "LogonCommand.ps1"
-
-# Cache resources
-Remove-Item -Path "$Win32App" -Recurse -Force -ErrorAction Ignore
-Copy-Item -Path "Toolkit" -Destination "$Cache" -Recurse -Force -Verbose -ErrorAction Ignore
-explorer "$Cache"
-#>
+[string]$Win32App = "C:\Temp\win32app"
