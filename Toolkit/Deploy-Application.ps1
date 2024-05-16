@@ -350,6 +350,7 @@ Try {
         ## <Perform Installation tasks here>
 
         Set-location $officeFolderPath
+        Write-Log -Message "Start install" -Source 'Office' -LogFileDirectory "C:\Temp\Win32app" -LogFileName "Office" -LogType 'CMTrace' 
         $Install = Execute-Process -Path "$officeFolderPath\setup.exe" -Parameters "/configure `"$officeFolderPath\Microsoft 365 Apps for enterprise 64-bit on Current Channel.xml`"" -Passthru
         Write-Log -Message "Exit" -Source 'Office' -LogFileDirectory "C:\Temp\Win32app" -LogFileName "Office" -LogType 'CMTrace' 
         # $ExitCode = $Install.exitcode
