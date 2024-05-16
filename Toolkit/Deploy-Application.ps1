@@ -219,44 +219,9 @@ Try {
     
             #Office processes found
             Show-InstallationWelcome -CloseApps 'winword=Microsoft Office Word,excel=Microsoft Office Excel,POWERPNT=Microsoft Office PowerPoint,Outlook=Microsoft Office Outlook,ONENOTEM=Microsoft Office OneNote,MSACCESS=Microsoft Office Access,MSPUB=Microsoft Office Publisher,Visio=Microsoft Office Visio,WinProj=Microsoft Office Project' -BlockExecution -AllowDefer -DeferTimes 3 -CloseAppsCountdown 3600
-    
+            Write-Log -Message "Show-InstallationWelcome -CloseApps" -Source 'Office' -LogFileDirectory "C:\Temp\Win32app" -LogFileName "Office" -LogType 'CMTrace' 
         }
         ## Show Progress Message (with the default message)
-
-        ## <Perform Pre-Installation tasks here>
-        $processesExplorer = @(Get-CimInstance -ClassName 'Win32_Process' -Filter "Name like 'explorer.exe'" -ErrorAction 'Ignore')
-        $esp = $false
-        foreach ($processExplorer in $processesExplorer) {
-            $user = (Invoke-CimMethod -InputObject $processExplorer -MethodName GetOwner).User
-            if ($user -eq 'defaultuser0' -or $user -eq 'defaultuser1') { $esp = $true }
-        }
-
-        Write-Host $esp
-
-        If ($esp -eq $True) {
-            #In ESP - Do not Show Progress Banner
-        } else {
-            #Not in ESP - Show Progress Banner
-            Show-InstallationProgress -StatusMessage "The latest version of Microsoft Apps 365 (64-bit) is being installed on your workstation. Thank you for your patience while we download and complete the setup. Once complete, this window will close."
-        }
-        
-
-        ##*===============================================
-        ##* INSTALLATION
-        ##*===============================================
-        [String]$installPhase = 'Installation'
-
-        ## Handle Zero-Config MSI Installations
-        If ($useDefaultMsi) {
-            [Hashtable]$ExecuteDefaultMSISplat = @{ Action = 'Install'; Path = $defaultMsiFile }; If ($defaultMstFile) {
-                $ExecuteDefaultMSISplat.Add('Transform', $defaultMstFile)
-            }
-            Execute-MSI @ExecuteDefaultMSISplat; If ($defaultMspFiles) {
-                $defaultMspFiles | ForEach-Object { Execute-MSI -Action 'Patch' -Path $_ }
-            }
-        }
-
-        ## <Perform Installation tasks here>
         $officeFolderPath = Join-Path -ChildPath "office" -Path "C:\Temp"
 
         if (Test-Path $officeFolderPath) {
@@ -265,6 +230,8 @@ Try {
 
         # Create the Office folder path
         New-Item -ItemType Directory -Path $officeFolderPath -Force
+        Write-Log -Message "Create folder C:\Temp\Office" -Source 'Office' -LogFileDirectory "C:\Temp\Win32app" -LogFileName "Office" -LogType 'CMTrace' 
+        
 
         # Check if the Office installer file already exists
         $officeInstallerPath = Join-Path $officeFolderPath "setup.exe"
@@ -273,6 +240,7 @@ Try {
             $officeInstallerDownloadURL = 'https://officecdn.microsoft.com/pr/wsus/setup.exe'
             try {
                 Invoke-WebRequest -Uri $officeInstallerDownloadURL -OutFile $officeInstallerPath
+                Write-Log -Message "Download Setup.exe" -Source 'Office' -LogFileDirectory "C:\Temp\Win32app" -LogFileName "Office" -LogType 'CMTrace' 
             } catch {
                 Write-Host "Failed to download the Office installer: $_"
             }
@@ -305,16 +273,34 @@ Try {
         }
 
         # Retrieve Azure AD Display Name
-        $displayNamePath = "HKLM:\SYSTEM\ControlSet001\Control\CloudDomainJoin\TenantInfo\*"
-        $displayNameKey = "DisplayName"
-        $displayName = Get-RegistryValue -Path $displayNamePath -Key $displayNameKey
-        Write-Output "Azure AD Display Name: $displayName"
+        try {
+            $displayNamePath = "HKLM:\SYSTEM\ControlSet001\Control\CloudDomainJoin\TenantInfo\*"
+            $displayNameKey = "DisplayName"
+            $displayName = Get-RegistryValue -Path $displayNamePath -Key $displayNameKey
+            Write-Output "Azure AD Display Name: $displayName"
+        } catch {
+            if ($_ -match "Registry path does not exist:") {
+                $displayName = "Dummy Value"
+                Write-Output "Azure AD Display Name: $displayName"
+            } else {
+                throw $_
+            }
+        }
 
-        # Retrieve Azure AD Tenant ID
-        $tenantIdPath = "HKLM:\SOFTWARE\Microsoft\Provisioning\Diagnostics\AutoPilot"
-        $tenantIdKey = "TenantId"
-        $tenantId = Get-RegistryValue -Path $tenantIdPath -Key $tenantIdKey
-        Write-Output "Azure AD Tenant ID: $tenantId"
+        try {
+            # Retrieve Azure AD Tenant ID
+            $tenantIdPath = "HKLM:\SOFTWARE\Microsoft\Provisioning\Diagnostics\AutoPilot"
+            $tenantIdKey = "TenantId"
+            $tenantId = Get-RegistryValue -Path $tenantIdPath -Key $tenantIdKey
+            Write-Output "Azure AD Tenant ID: $tenantId"
+        } catch {
+            if ($_ -match "Registry path does not exist:") {
+                $tenantId = "Dummy Value"
+                Write-Output "Azure AD Tenant ID: $tenantId"
+            } else {
+                throw $_
+            }
+        }
 
         $Microsoft365Appsforenterprise64bitonCurrentChannelUrl = "https://raw.githubusercontent.com/denniswesterman/M365-Apps/006880da9bf236522828e191b77570b85579eb07/Microsoft%20365%20Apps%20for%20enterprise%2064-bit%20on%20Current%20Channel.xml"
         $Microsoft365Appsforenterprise64bitonCurrentChannelPath = "Microsoft 365 Apps for enterprise 64-bit on Current Channel.xml"
@@ -323,8 +309,49 @@ Try {
         Invoke-WebRequest -Uri $Microsoft365Appsforenterprise64bitonCurrentChannelUrl -OutFile $officeFolderPath\$Microsoft365Appsforenterprise64bitonCurrentChannelPath -UseBasicParsing
         ((Get-Content -path $officeFolderPath\$Microsoft365Appsforenterprise64bitonCurrentChannelPath -Raw) -replace '<Company>', $displayName) | Set-Content -Path $officeFolderPath\$Microsoft365Appsforenterprise64bitonCurrentChannelPath
         ((Get-Content -path $officeFolderPath\$Microsoft365Appsforenterprise64bitonCurrentChannelPath -Raw) -replace '<tenantId>', $tenantId) | Set-Content -Path $officeFolderPath\$Microsoft365Appsforenterprise64bitonCurrentChannelPath
+        $Download = Execute-Process -Path "$officeFolderPath\setup.exe" -Parameters "/download `"$officeFolderPath\Microsoft 365 Apps for enterprise 64-bit on Current Channel.xml`"" -Passthru
+        Write-Log -Message "Download Office" -Source 'Office' -LogFileDirectory "C:\Temp\Win32app" -LogFileName "Office" -LogType 'CMTrace' 
+        
+
+        ## <Perform Pre-Installation tasks here>
+        $processesExplorer = @(Get-CimInstance -ClassName 'Win32_Process' -Filter "Name like 'explorer.exe'" -ErrorAction 'Ignore')
+        $esp = $false
+        foreach ($processExplorer in $processesExplorer) {
+            $user = (Invoke-CimMethod -InputObject $processExplorer -MethodName GetOwner).User
+            if ($user -eq 'defaultuser0' -or $user -eq 'defaultuser1') { $esp = $true }
+        }
+
+        Write-Host $esp
+
+        If ($esp -eq $True) {
+            #In ESP - Do not Show Progress Banner
+        } else {
+            #Not in ESP - Show Progress Banner
+            Show-InstallationProgress -StatusMessage "The latest version of Microsoft Apps 365 (64-bit) is being installed on your workstation. Thank you for your patience while we download and complete the setup. Once complete, this window will close."
+            Write-Log -Message "Show-InstallationProgress -StatusMessage" -Source 'Office' -LogFileDirectory "C:\Temp\Win32app" -LogFileName "Office" -LogType 'CMTrace' 
+        }
+        
+
+        ##*===============================================
+        ##* INSTALLATION
+        ##*===============================================
+        [String]$installPhase = 'Installation'
+
+        ## Handle Zero-Config MSI Installations
+        If ($useDefaultMsi) {
+            [Hashtable]$ExecuteDefaultMSISplat = @{ Action = 'Install'; Path = $defaultMsiFile }; If ($defaultMstFile) {
+                $ExecuteDefaultMSISplat.Add('Transform', $defaultMstFile)
+            }
+            Execute-MSI @ExecuteDefaultMSISplat; If ($defaultMspFiles) {
+                $defaultMspFiles | ForEach-Object { Execute-MSI -Action 'Patch' -Path $_ }
+            }
+        }
+
+        ## <Perform Installation tasks here>
+
         Set-location $officeFolderPath
         $Install = Execute-Process -Path "$officeFolderPath\setup.exe" -Parameters "/configure `"$officeFolderPath\Microsoft 365 Apps for enterprise 64-bit on Current Channel.xml`"" -Passthru
+        Write-Log -Message "Exit" -Source 'Office' -LogFileDirectory "C:\Temp\Win32app" -LogFileName "Office" -LogType 'CMTrace' 
         # $ExitCode = $Install.exitcode
         # $ExitCode
 
