@@ -23,6 +23,7 @@
             "args": [
                 "-ExecutionPolicy",
                 "Bypass",
+                "-NoProfile",
                 "-File",
                 "${cwd}\\.vscode\\build.ps1"
             ],
