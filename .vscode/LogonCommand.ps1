@@ -1,5 +1,5 @@
-# Load global variables
-$globalScriptPath = ".\Global.ps1"
+# Determine the path of the global script relative to this script
+$globalScriptPath = Join-Path -Path (Split-Path -Path $MyInvocation.MyCommand.Definition -Parent) -ChildPath 'Global.ps1'
 if (-not (Test-Path -Path $globalScriptPath)) {
     Write-Error "The global script $globalScriptPath does not exist."
     exit
