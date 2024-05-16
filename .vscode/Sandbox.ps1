@@ -1,5 +1,10 @@
 # Load global variables
-. ".\Global.ps1"
+$globalScriptPath = ".\Global.ps1"
+if (-not (Test-Path -Path $globalScriptPath)) {
+    Write-Error "The global script $globalScriptPath does not exist."
+    exit
+}
+. $globalScriptPath
 
 # Copy Resources
 Copy-Item -Path ".vscode\$LogonCommand" -Destination "$Win32App\" -Recurse -Force -Verbose -ErrorAction Ignore
@@ -16,7 +21,7 @@ $sandboxConfig = @"
     </MappedFolder>
   </MappedFolders>
   <LogonCommand>
-    <Command>powershell -executionpolicy unrestricted -command "Start-Process powershell -ArgumentList `"-nologo -file $WDADesktop\$LogonCommand`""</Command>
+    <Command>powershell -executionpolicy unrestricted -command `"Start-Process powershell -ArgumentList '-nologo -file $WDADesktop\$LogonCommand'`"</Command>
   </LogonCommand>
 </Configuration>
 "@
