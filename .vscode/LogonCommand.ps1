@@ -1,5 +1,10 @@
-# Import the toolkit path and installation executable name
-. ".\Global.ps1"
+# Load global variables
+$globalScriptPath = ".\Global.ps1"
+if (-not (Test-Path -Path $globalScriptPath)) {
+    Write-Error "The global script $globalScriptPath does not exist."
+    exit
+}
+. $globalScriptPath
 
 # Check if the installation executable requires winget
 if (Get-Content -Path "$ToolkitPath\$InstallexeName" | Select-String "winget install") {
@@ -12,7 +17,7 @@ if (Get-Content -Path "$ToolkitPath\$InstallexeName" | Select-String "winget ins
         @{
             fileName = 'Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle'
             url      = 'https://api.github.com/repos/microsoft/winget-cli/releases/latest'
-            hash     = 'some_hash_value'
+            hash     = 'some_hash_value'  # Placeholder for the actual hash
         },
         @{
             fileName = 'Microsoft.VCLibs.x64.14.00.Desktop.appx'
