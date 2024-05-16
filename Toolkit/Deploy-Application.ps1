@@ -237,7 +237,7 @@ Try {
             #In ESP - Do not Show Progress Banner
         } else {
             #Not in ESP - Show Progress Banner
-            Show-InstallationProgress -StatusMessage "The latest version of Microsoft Office 365 (64-bit) is being installed on your workstation. Thank you for your patience while we download and complete the setup. Once complete, this window will close."
+            Show-InstallationProgress -StatusMessage "The latest version of Microsoft Apps 365 (64-bit) is being installed on your workstation. Thank you for your patience while we download and complete the setup. Once complete, this window will close."
         }
         
 
@@ -325,8 +325,8 @@ Try {
         ((Get-Content -path $officeFolderPath\$Microsoft365Appsforenterprise64bitonCurrentChannelPath -Raw) -replace '<tenantId>', $tenantId) | Set-Content -Path $officeFolderPath\$Microsoft365Appsforenterprise64bitonCurrentChannelPath
         Set-location $officeFolderPath
         $Install = Execute-Process -Path "$officeFolderPath\setup.exe" -Parameters "/configure `"$officeFolderPath\Microsoft 365 Apps for enterprise 64-bit on Current Channel.xml`"" -Passthru
-        $ExitCode = $Install.exitcode
-        $ExitCode
+        # $ExitCode = $Install.exitcode
+        # $ExitCode
 
         ##*===============================================
         ##* POST-INSTALLATION

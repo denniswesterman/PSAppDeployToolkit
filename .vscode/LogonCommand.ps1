@@ -7,7 +7,7 @@ if (-not (Test-Path -Path $globalScriptPath)) {
 . $globalScriptPath
 
 # Begin the installation process
-Start-Process -FilePath "$ToolkitPath\$InstallexeName" -WindowStyle Maximized -Wait
+Start-Process -FilePath "C:\Users\WDAGUtilityAccount\Desktop\Deploy-Application.exe" -DeploymentType Install -DeployMode Interactive -AllowRebootPassThru
 
 
 
