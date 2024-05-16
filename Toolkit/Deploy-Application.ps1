@@ -263,6 +263,9 @@ Try {
             Remove-Item -Path $officeFolderPath -Recurse -Force
         }
 
+        # Create the Office folder path
+        New-Item -ItemType Directory -Path $officeFolderPath -Force
+
         # Download the Office 365 installer
         $officeInstallerDownloadURL = 'https://officecdn.microsoft.com/pr/wsus/setup.exe'
         $officeFolderPath = Join-Path $env:TEMP "office"

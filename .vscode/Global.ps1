@@ -1,8 +1,8 @@
 [string]$Desktop = [Environment]::GetFolderPath('DesktopDirectory')
 [string]$WDADesktop = "C:\Users\WDAGUtilityAccount\Desktop"
-[string]$Win32App = "$env:ProgramData\win32app"
-[string]$Application = "$(& git branch --show-current)"
-[string]$Cache = "$env:ProgramData\win32app\$Application"
+[string]$Win32App = "C:\M365\win32app"
+[string]$Application = "$($env:APPVEYOR_REPO_BRANCH)"
+[string]$Cache = "C:\M365\win32app\$Application"
 [string]$LogonCommand = "LogonCommand.ps1"
 
 # Cache resources
