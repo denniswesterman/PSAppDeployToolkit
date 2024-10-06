@@ -103,7 +103,7 @@ Try {
     }
 
     ##*===============================================
-    ##* VARIABLE DECLARATION
+    #region VARIABLE DECLARATION
     ##*===============================================
     ## Variables: Application
     [String]$appVendor = ''
@@ -128,8 +128,8 @@ Try {
 
     ## Variables: Script
     [String]$deployAppScriptFriendlyName = 'Deploy Application'
-    [Version]$deployAppScriptVersion = [Version]'3.10.1'
-    [String]$deployAppScriptDate = '05/03/2024'
+    [Version]$deployAppScriptVersion = [Version]'3.10.2'
+    [String]$deployAppScriptDate = '08/13/2024'
     [Hashtable]$deployAppScriptParameters = $PsBoundParameters
 
     ## Variables: Environment
@@ -167,12 +167,12 @@ Try {
     #endregion
     ##* Do not modify section above
     ##*===============================================
-    ##* END VARIABLE DECLARATION
+    #endregion END VARIABLE DECLARATION
     ##*===============================================
 
     If ($deploymentType -ine 'Uninstall' -and $deploymentType -ine 'Repair') {
         ##*===============================================
-        ##* PRE-INSTALLATION
+        ##* MARK: PRE-INSTALLATION
         ##*===============================================
         [String]$installPhase = 'Pre-Installation'
 
@@ -333,7 +333,7 @@ Try {
         
 
         ##*===============================================
-        ##* INSTALLATION
+        ##* MARK: INSTALLATION
         ##*===============================================
         [String]$installPhase = 'Installation'
 
@@ -357,7 +357,7 @@ Try {
         # $ExitCode
 
         ##*===============================================
-        ##* POST-INSTALLATION
+        ##* MARK: POST-INSTALLATION
         ##*===============================================
         [String]$installPhase = 'Post-Installation'
 
@@ -369,7 +369,7 @@ Try {
         }
     } ElseIf ($deploymentType -ieq 'Uninstall') {
         ##*===============================================
-        ##* PRE-UNINSTALLATION
+        ##* MARK: PRE-UNINSTALLATION
         ##*===============================================
         [String]$installPhase = 'Pre-Uninstallation'
 
@@ -383,7 +383,7 @@ Try {
 
 
         ##*===============================================
-        ##* UNINSTALLATION
+        ##* MARK: UNINSTALLATION
         ##*===============================================
         [String]$installPhase = 'Uninstallation'
 
@@ -399,7 +399,7 @@ Try {
 
 
         ##*===============================================
-        ##* POST-UNINSTALLATION
+        ##* MARK: POST-UNINSTALLATION
         ##*===============================================
         [String]$installPhase = 'Post-Uninstallation'
 
@@ -408,7 +408,7 @@ Try {
 
     } ElseIf ($deploymentType -ieq 'Repair') {
         ##*===============================================
-        ##* PRE-REPAIR
+        ##* MARK: PRE-REPAIR
         ##*===============================================
         [String]$installPhase = 'Pre-Repair'
 
@@ -421,7 +421,7 @@ Try {
         ## <Perform Pre-Repair tasks here>
 
         ##*===============================================
-        ##* REPAIR
+        ##* MARK: REPAIR
         ##*===============================================
         [String]$installPhase = 'Repair'
 
@@ -435,7 +435,7 @@ Try {
         ## <Perform Repair tasks here>
 
         ##*===============================================
-        ##* POST-REPAIR
+        ##* MARK: POST-REPAIR
         ##*===============================================
         [String]$installPhase = 'Post-Repair'
 
@@ -443,9 +443,6 @@ Try {
 
 
     }
-    ##*===============================================
-    ##* END SCRIPT BODY
-    ##*===============================================
 
     ## Call the Exit-Script function to perform final cleanup operations
     Exit-Script -ExitCode $mainExitCode
